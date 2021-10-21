@@ -17,13 +17,14 @@
 package uk.gov.hmrc.servicedependencies.connector
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.typesafe.config.ConfigFactory
 import org.mockito.MockitoSugar
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.Configuration
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.test.{HttpClientSupport, WireMockSupport}
+import uk.gov.hmrc.http.test.{HttpClient2Support, WireMockSupport}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.servicedependencies.config.ServiceDependenciesConfig
 
@@ -36,7 +37,7 @@ class GithubRawConnectorSpec
      with ScalaFutures
      with IntegrationPatience
      with WireMockSupport
-     with HttpClientSupport {
+     with HttpClient2Support {
 
   import ExecutionContext.Implicits.global
 
@@ -77,12 +78,12 @@ class GithubRawConnectorSpec
       val serviceDependenciesConfig = new ServiceDependenciesConfig(
         Configuration.from(Map(
           "github.open.api.rawurl" -> s"$wireMockUrl/github/raw"
-        )),
+        )).withFallback(Configuration(ConfigFactory.load())),
         mockServicesConfig
       )
 
       val githubRawConnector = new GithubRawConnector(
-          httpClient,
+          httpClient2,
           serviceDependenciesConfig
         )
 

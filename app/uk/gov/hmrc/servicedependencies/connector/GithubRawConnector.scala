@@ -19,7 +19,8 @@ package uk.gov.hmrc.servicedependencies.connector
 import cats.implicits._
 import javax.inject.{Inject, Singleton}
 import org.yaml.snakeyaml.Yaml
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpReads, HttpResponse, StringContextOps, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse, StringContextOps, UpstreamErrorResponse}
+import uk.gov.hmrc.http.client2.HttpClient2
 import uk.gov.hmrc.servicedependencies.config.ServiceDependenciesConfig
 import HttpReads.Implicits._
 
@@ -29,18 +30,17 @@ import scala.util.Try
 
 @Singleton
 class GithubRawConnector @Inject()(
-  httpClient               : HttpClient
+  httpClient2              : HttpClient2
 , serviceDependenciesConfig: ServiceDependenciesConfig
 )(implicit
   ec: ExecutionContext
 ) {
   def decomissionedServices(implicit hc: HeaderCarrier): Future[List[String]] = {
     val url = url"${serviceDependenciesConfig.githubRawUrl}/hmrc/decommissioning/main/decommissioned-microservices.yaml"
-    httpClient
-      .GET[Either[UpstreamErrorResponse, HttpResponse]](
-          url     = url
-        , headers = Seq("Authorization" -> s"Token ${serviceDependenciesConfig.githubApiOpenConfig.key}")
-        )
+    httpClient2
+      .get(url)
+      .replaceHeader("Authorization" -> s"Token ${serviceDependenciesConfig.githubApiOpenConfig.key}")
+      .execute[Either[UpstreamErrorResponse, HttpResponse]]
       .flatMap(
         _.flatMap(res =>
            Try(
